@@ -1,0 +1,86 @@
+open fcntl.h
+lseek read | write close unistd.h
+文件就是字节流，不区分文本和二进制文件。
+当文件的位置指针后面只有20个字节，而read(fileno,buf,50)字节是，就返回20个字节，当再次read是返回 0 字节，来作为eof的信号，
+EOF标志是不存在于文件内容当中的，他只是系统给出的一个信号而已。
+在某些情况下read and write 传送的字节会比应用程序要求的少，这些不足值（short count）不表示出错，：
+1.读取是遇到eof
+2.从终端读取文本行
+3.读和写网络套接字 内部缓冲和较长的网络延迟
+---》反复的调用read和write吃力不足值，知道所有需要的字节都被传送完毕。
+
+类似与printf这样的标准io函数，提供过了【【应用级的缓冲 】】
+所有的标准IO,程序员都要为其allocate space and check errors  : feof and ferror
+fread and fwrite deals with record : 
+fread(buf , size, nitems,stream); => number of items to read ;
+
+fgets(buf,bytes,stream) => 
+                buf 
+                null and set eof to stream
+                null and set error to stream
+: writes characters to buf,until:
+  1.a newline is encoutered 
+  2.n-1 characters have been transferred
+  3.the end of the file is reached
+  all the three listed above ,whichever occurs first!!!!
+  and it will add a null byte to mark the end of the string.
+  
+  文件描述符表：   进程独有　，每个描述符对应唯一的打开文件表，不同的进程的文件描述符，可以指向相同的打开文件表项。
+  打开文件表 ：所有进程共享　每次以文件名调用ｏｐｅｎ系统给调用就会建立一个打开文件表项，其引用计数就增加一
+  ｖ-node表：　所有进程共享　真正的文件的元数据（ｐｅｒｍｉｓｓｉｏｎ，ｓｉｚｅ,type) and文件内容数据。
+  
+  FILE *fopen(const char *filename,const char *mode)
+  size_t fread(void *ptr,size_t size,size_t nitems,FILE* stream) -> nitems to read
+  size_t fwrite(const void *ptr,size_t size,size_t nitems, FILE* stream);
+  int fclose(FILE *stream); cause any unwritten data to be written.
+  int fflush(FILE *stream) cause all outstanding(显著的，未完成的) data on  a file stream to be written immediately
+  int fseek(FILE* stream,long int offset, int whence);
+  
+  int fgetc(FILE *stream) => EOF when it reaches the end OR there is an error 。ferror and feof to distinguish the two cases
+  int getchar();
+  int fputc(int c, FILE *stream)
+  int putchar()
+  
+  char* fgets(char *s, int n, FILE* stream);
+  
+  while((c = fgetc(in_FILE)) != EOF){
+    fputc(c,out_FILE);
+  }
+  printf(char *format,...)
+  sprintf(char *s,char *format,...),讲格式化后的字符串写入到　指针ｓ处，并在末尾添加一个空字符。\0 ;所以预先分配的空间要足够大
+  fprintf(FILE* stream,const char *format,...);
+  
+  “％ｓ,%d"  %s,%d ---> conversion specifier
+  "%10s,%-10s,%010d,%-10d,%10.4f,"  其中　10,-10,10.4 --> field specifier
+  "%*s" 其中的*（星号）可以动态的设置ｆｉｅｌｄ width　　ｅｇ:　”%*s" 20,stringPointer, 只是输出字符串的宽度为２０
+  
+  
+  <error.h> extern int errno
+  
+  int ferror(FILE *stream)
+          :test the error indicator for a stream and reutrn nonzero if it's set ,but zero otherwise
+  int feof(FILE *stream)
+          :test the end-of-file indicator within a stream and returns nonzero if you reach the end ;
+  void clearerr(FILE *stream)
+          : clear the eof and error indicator 
+          
+  int fileno(FILE* stream) -> file descriptor or -1
+  FILE *fdopen(int filedesc, const char* mode);
+  
+  
+  Maintenance
+  int chmod(const char *path,mode_t mode)
+      : only the owner and superuser can change its permissions 
+  int chown(const char *path, uid_t owner, gid_t group)
+  int unlink(const char *path); //remove the directory entry for a file and decrements the link count for it ;;0 -> success; -1 failed
+  int link(const char*path1, const char *path2);
+  int syslink(const char *path1,const char* path2)
+              open(path,create，mode) and unlink(path) to have a transient file.
+              
+              
+              
+              
+              
+              
+              
+              
